@@ -1,6 +1,7 @@
-from distutils.core import setup
+# from distutils.core import setup 已废弃
+from setuptools import setup # 3.12以后的导包方式
 
-import py2exe
+
 import glob
 
 setup(
