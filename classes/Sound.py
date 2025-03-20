@@ -15,6 +15,9 @@ class Sound:
                 self.powerup = pygame.mixer.Sound('./sounds/powerup.wav')
                 self.powerdown = pygame.mixer.Sound('./sounds/powerdown.wav')
                 self.stomp = pygame.mixer.Sound('./sounds/stomp.wav')
+                self.time_warning = pygame.mixer.Sound('./sounds/time_warning.wav')
+                self.game_over = pygame.mixer.Sound('./sounds/game_over.wav')
+                self.extra_life = pygame.mixer.Sound('./sounds/extra_life.wav')
                 
                 # 加载音乐
                 pygame.mixer.music.load('./sounds/music.mp3')
@@ -25,7 +28,7 @@ class Sound:
                 print("Warning: Could not load sound files. Game will run without sound.")
                 self.sound_enabled = False
 
-    def play_sound(self, sound_name):
+    def play_sfx(self, sound_name):
         if not self.sound_enabled:
             return
             
@@ -46,6 +49,12 @@ class Sound:
                 self.powerdown.play()
             elif sound_name == 'stomp':
                 self.stomp.play()
+            elif sound_name == 'time_warning':
+                self.time_warning.play()
+            elif sound_name == 'game_over':
+                self.game_over.play()
+            elif sound_name == 'extra_life':
+                self.extra_life.play()
         except pygame.error:
             pass
 
@@ -81,6 +90,9 @@ class Sound:
             self.powerup.set_volume(volume)
             self.powerdown.set_volume(volume)
             self.stomp.set_volume(volume)
+            self.time_warning.set_volume(volume)
+            self.game_over.set_volume(volume)
+            self.extra_life.set_volume(volume)
             
             # 设置音乐的音量
             pygame.mixer.music.set_volume(volume)
