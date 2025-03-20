@@ -1,4 +1,5 @@
 import pygame
+from abc import ABC, abstractmethod
 
 from classes.Animation import Animation
 from classes.Camera import Camera
@@ -33,6 +34,56 @@ bigAnimation = Animation(
     spriteCollection["mario_big_jump"].image,
 )
 
+class MarioState(ABC):
+    @abstractmethod
+    def enter(self, mario):
+        pass
+
+    @abstractmethod
+    def exit(self, mario):
+        pass
+
+    @abstractmethod
+    def update(self, mario):
+        pass
+
+class SmallMarioState(MarioState):
+    def enter(self, mario):
+        mario.powerUpState = 0
+        mario.traits['goTrait'].updateAnimation(smallAnimation)
+        mario.rect = pygame.Rect(mario.rect.x, mario.rect.y + 32, 32, 32)
+
+    def exit(self, mario):
+        pass
+
+    def update(self, mario):
+        pass
+
+class BigMarioState(MarioState):
+    def enter(self, mario):
+        mario.powerUpState = 1
+        mario.traits['goTrait'].updateAnimation(bigAnimation)
+        mario.rect = pygame.Rect(mario.rect.x, mario.rect.y - 32, 32, 64)
+
+    def exit(self, mario):
+        pass
+
+    def update(self, mario):
+        pass
+
+class InvincibleMarioState(MarioState):
+    def enter(self, mario):
+        mario.invincibilityFrames = 60
+        mario.sound.play_sfx(mario.sound.powerup)
+
+    def exit(self, mario):
+        mario.invincibilityFrames = 0
+
+    def update(self, mario):
+        if mario.invincibilityFrames > 0:
+            mario.invincibilityFrames -= 1
+        else:
+            mario.changeState(SmallMarioState() if mario.powerUpState == 0 else BigMarioState())
 
 class Mario(EntityBase):
     def __init__(self, x, y, level, screen, dashboard, sound, gravity=0.8):
@@ -58,10 +109,18 @@ class Mario(EntityBase):
         self.restart = False
         self.pause = False
         self.pauseObj = Pause(screen, self, dashboard)
+        
+        # 状态管理
+        self.state = SmallMarioState()
+        self.state.enter(self)
+
+    def changeState(self, new_state):
+        self.state.exit(self)
+        self.state = new_state
+        self.state.enter(self)
 
     def update(self):
-        if self.invincibilityFrames > 0:
-            self.invincibilityFrames -= 1
+        self.state.update(self)
         self.updateTraits()
         self.moveMario()
         self.camera.move()
@@ -102,7 +161,6 @@ class Mario(EntityBase):
         if isinstance(mob, RedMushroom) and mob.alive:
             self.powerup(1)
             self.killEntity(mob)
-            self.sound.play_sfx(self.sound.powerup)
         elif collisionState.isTop and (mob.alive or mob.bouncing):
             self.sound.play_sfx(self.sound.stomp)
             self.rect.bottom = mob.rect.top
@@ -127,13 +185,8 @@ class Mario(EntityBase):
         elif collisionState.isColliding and mob.alive and not self.invincibilityFrames:
             if self.powerUpState == 0:
                 self.gameOver()
-            elif self.powerUpState == 1:
-                self.powerUpState = 0
-                self.traits['goTrait'].updateAnimation(smallAnimation)
-                x, y = self.rect.x, self.rect.y
-                self.rect = pygame.Rect(x, y + 32, 32, 32)
-                self.invincibilityFrames = 60
-                self.sound.play_sfx(self.sound.pipe)
+            else:
+                self.changeState(InvincibleMarioState())
 
     def bounce(self):
         self.traits["bounceTrait"].jump = True
@@ -180,9 +233,5 @@ class Mario(EntityBase):
         self.rect.y = y
         
     def powerup(self, powerupID):
-        if self.powerUpState == 0:
-            if powerupID == 1:
-                self.powerUpState = 1
-                self.traits['goTrait'].updateAnimation(bigAnimation)
-                self.rect = pygame.Rect(self.rect.x, self.rect.y-32, 32, 64)
-                self.invincibilityFrames = 20
+        if self.powerUpState == 0 and powerupID == 1:
+            self.changeState(BigMarioState())

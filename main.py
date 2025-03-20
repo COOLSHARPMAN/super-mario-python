@@ -1,44 +1,76 @@
 import pygame
-from classes.Dashboard import Dashboard
-from classes.Level import Level
-from classes.Menu import Menu
-from classes.Sound import Sound
-from entities.Mario import Mario
-
-
-windowSize = 640, 480
-pygame.mixer.init()
+import sys
+from classes.Dashboard import Dashboard  # 导入Dashboard类
+from classes.Level import Level  # 导入Level类
+from classes.Menu import Menu  # 导入Menu类
+from classes.Sound import Sound  # 导入Sound类
+from entities.Mario import Mario  # 导入Mario类
+from config.game_config import GameConfig
 
 def main():
-    pygame.mixer.pre_init(44100, -16, 2, 4096)
+    # 加载游戏配置
+    config = GameConfig()
+    
+    # 初始化Pygame
     pygame.init()
-    screen = pygame.display.set_mode(windowSize)
-    max_frame_rate = 60
+    
+    # 设置窗口
+    window_size = (config.get('window.width'), config.get('window.height'))
+    screen = pygame.display.set_mode(window_size)
+    pygame.display.set_caption(config.get('window.title'))
+    
+    # 尝试初始化音频系统
+    try:
+        pygame.mixer.init()
+        sound_enabled = True
+    except pygame.error:
+        print("Warning: Audio system not available. Game will run without sound.")
+        sound_enabled = False
+    
+    # 创建游戏对象
     dashboard = Dashboard("./img/font.png", 8, screen)
-    sound = Sound()
-    level = Level(screen, sound, dashboard)
+    sound = Sound(sound_enabled)
+    level = Level(screen, dashboard, sound_enabled)
     menu = Menu(screen, dashboard, level, sound)
-
-    while not menu.start:
-        menu.update()
-
-    mario = Mario(0, 0, level, screen, dashboard, sound)
-    clock = pygame.time.Clock()
-
-    while not mario.restart:
-        pygame.display.set_caption("Super Mario running with {:d} FPS".format(int(clock.get_fps())))
-        if mario.pause:
-            mario.pauseObj.update()
-        else:
-            level.drawLevel(mario.camera)
+    mario = Mario(0, 0, level, screen, dashboard, sound, config.get('game.gravity'))
+    
+    # 游戏主循环
+    while True:
+        # 处理事件
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+                if event.key == pygame.K_RETURN:
+                    if menu.start == 0:  # 在主菜单时
+                        if menu.state == 0:  # 选择关卡
+                            menu.chooseLevel()
+                        elif menu.state == 1:  # 设置
+                            menu.inSettings = True
+                        elif menu.state == 2:  # 退出
+                            pygame.quit()
+                            sys.exit()
+                    menu.start = 1
+                if menu.start == 2:  # 游戏结束时
+                    menu.start = 0
+                    mario.__init__(0, 0, level, screen, dashboard, sound, config.get('game.gravity'))
+                    level.__init__(screen, dashboard, sound_enabled)
+        
+        # 更新游戏状态
+        if menu.start == 0:  # 显示主菜单
+            menu.update()
+        elif menu.start == 1:  # 游戏进行中
+            level.drawLevel(mario.camera, mario)
             dashboard.update()
             mario.update()
+        elif menu.start == 2:  # 显示游戏结束菜单
+            menu.draw()
+        
         pygame.display.update()
-        clock.tick(max_frame_rate)
-    return 'restart'
-
 
 if __name__ == "__main__":
-    exitmessage = 'restart'
-    while exitmessage == 'restart':
-        exitmessage = main()
+    main()

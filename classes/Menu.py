@@ -8,9 +8,10 @@ from classes.Spritesheet import Spritesheet
 
 class Menu:
     def __init__(self, screen, dashboard, level, sound):
+        # 初始化菜单
         self.screen = screen
         self.sound = sound
-        self.start = False
+        self.start = 0
         self.inSettings = False
         self.state = 0
         self.level = level
@@ -40,6 +41,7 @@ class Menu:
         self.loadSettings("./settings.json")
 
     def update(self):
+        # 更新菜单状态
         self.checkInput()
         if self.inChoosingLevel:
             return
@@ -53,6 +55,7 @@ class Menu:
             self.drawSettings()
 
     def drawDot(self):
+        # 绘制菜单点
         if self.state == 0:
             self.screen.blit(self.menu_dot, (145, 273))
             self.screen.blit(self.menu_dot2, (145, 313))
@@ -67,6 +70,7 @@ class Menu:
             self.screen.blit(self.menu_dot2, (145, 313))
 
     def loadSettings(self, url):
+        # 加载设置
         try:
             with open(url) as jsonData:
                 data = json.load(jsonData)
@@ -88,17 +92,20 @@ class Menu:
             self.saveSettings("./settings.json")
 
     def saveSettings(self, url):
+        # 保存设置
         data = {"sound": self.music, "sfx": self.sfx}
         with open(url, "w") as outfile:
             json.dump(data, outfile)
 
     def drawMenu(self):
+        # 绘制主菜单
         self.drawDot()
         self.dashboard.drawText("CHOOSE LEVEL", 180, 280, 24)
         self.dashboard.drawText("SETTINGS", 180, 320, 24)
         self.dashboard.drawText("EXIT", 180, 360, 24)
 
     def drawMenuBackground(self, withBanner=True):
+        # 绘制菜单背景
         for y in range(0, 13):
             for x in range(0, 20):
                 self.screen.blit(
@@ -135,6 +142,7 @@ class Menu:
         self.screen.blit(self.level.sprites.spriteCollection.get("goomba-1").image, (18.5*32, 12*32))
 
     def drawSettings(self):
+        # 绘制设置菜单
         self.drawDot()
         self.dashboard.drawText("MUSIC", 180, 280, 24)
         if self.music:
@@ -149,18 +157,21 @@ class Menu:
         self.dashboard.drawText("BACK", 180, 360, 24)
 
     def chooseLevel(self):
+        # 选择关卡
         self.drawMenuBackground(False)
         self.inChoosingLevel = True
         self.levelNames = self.loadLevelNames()
         self.drawLevelChooser()
 
     def drawBorder(self, x, y, width, height, color, thickness):
+        # 绘制边框
         pygame.draw.rect(self.screen, color, (x, y, width, thickness))
         pygame.draw.rect(self.screen, color, (x, y+width, width, thickness))
         pygame.draw.rect(self.screen, color, (x, y, thickness, width))
         pygame.draw.rect(self.screen, color, (x+width, y, thickness, width+thickness))
 
     def drawLevelChooser(self):
+        # 绘制关卡选择器
         j = 0
         offset = 75
         textOffset = 90
@@ -178,6 +189,7 @@ class Menu:
                 j += 1
 
     def loadLevelNames(self):
+        # 加载关卡名称
         files = []
         res = []
         for r, d, f in os.walk("./levels"):
@@ -189,6 +201,7 @@ class Menu:
         return res
 
     def checkInput(self):
+        # 检查输入
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:

@@ -21,6 +21,16 @@ class Level:
         self.level = None
         self.levelLength = 0
         self.entityList = []
+        # 添加精灵组
+        self.all_sprites = pygame.sprite.Group()
+        self.enemies = pygame.sprite.Group()
+        self.items = pygame.sprite.Group()
+        self.blocks = pygame.sprite.Group()
+        # 视口范围
+        self.viewport_x = 0
+        self.viewport_y = 0
+        self.viewport_width = screen.get_width()
+        self.viewport_height = screen.get_height()
 
     def loadLevel(self, levelname):
         with open("./levels/{}.json".format(levelname)) as jsonData:
@@ -78,15 +88,43 @@ class Level:
             )
 
     def updateEntities(self, cam):
+        # 更新视口位置
+        self.viewport_x = int(cam.pos.x)
+        self.viewport_y = int(cam.pos.y)
+        
+        # 只更新在视口内的实体
         for entity in self.entityList:
-            entity.update(cam)
-            if entity.alive is None:
-                self.entityList.remove(entity)
+            if self.isInViewport(entity):
+                entity.update(cam)
+                if entity.alive is None:
+                    self.entityList.remove(entity)
+                    if entity in self.all_sprites:
+                        self.all_sprites.remove(entity)
+                    if entity in self.enemies:
+                        self.enemies.remove(entity)
+                    if entity in self.items:
+                        self.items.remove(entity)
+                    if entity in self.blocks:
+                        self.blocks.remove(entity)
+
+    def isInViewport(self, entity):
+        # 检查实体是否在视口内
+        entity_rect = entity.rect
+        return (entity_rect.right > self.viewport_x and 
+                entity_rect.left < self.viewport_x + self.viewport_width and
+                entity_rect.bottom > self.viewport_y and 
+                entity_rect.top < self.viewport_y + self.viewport_height)
 
     def drawLevel(self, camera):
         try:
-            for y in range(0, 15):
-                for x in range(0 - int(camera.pos.x + 1), 20 - int(camera.pos.x - 1)):
+            # 只绘制视口内的内容
+            start_x = max(0, int(camera.pos.x))
+            end_x = min(self.levelLength, int(camera.pos.x + self.viewport_width // 32 + 1))
+            start_y = 0
+            end_y = min(15, int(self.viewport_height // 32 + 1))
+
+            for y in range(start_y, end_y):
+                for x in range(start_x, end_x):
                     if self.level[y][x].sprite is not None:
                         if self.level[y][x].sprite.redrawBackground:
                             self.screen.blit(
@@ -96,6 +134,9 @@ class Level:
                         self.level[y][x].sprite.drawSprite(
                             x + camera.pos.x, y, self.screen
                         )
+            
+            # 使用精灵组绘制实体
+            self.all_sprites.draw(self.screen)
             self.updateEntities(camera)
         except IndexError:
             return
@@ -147,59 +188,68 @@ class Level:
 
     def addCoinBox(self, x, y):
         self.level[y][x] = Tile(None, pygame.Rect(x * 32, y * 32 - 1, 32, 32))
-        self.entityList.append(
-            CoinBox(
-                self.screen,
-                self.sprites.spriteCollection,
-                x,
-                y,
-                self.sound,
-                self.dashboard,
-            )
+        coin_box = CoinBox(
+            self.screen,
+            self.sprites.spriteCollection,
+            x,
+            y,
+            self.sound,
+            self.dashboard,
         )
+        self.entityList.append(coin_box)
+        self.all_sprites.add(coin_box)
+        self.blocks.add(coin_box)
 
     def addRandomBox(self, x, y, item):
         self.level[y][x] = Tile(None, pygame.Rect(x * 32, y * 32 - 1, 32, 32))
-        self.entityList.append(
-            RandomBox(
-                self.screen,
-                self.sprites.spriteCollection,
-                x,
-                y,
-                item,
-                self.sound,
-                self.dashboard,
-                self
-            )
+        random_box = RandomBox(
+            self.screen,
+            self.sprites.spriteCollection,
+            x,
+            y,
+            item,
+            self.sound,
+            self.dashboard,
+            self
         )
+        self.entityList.append(random_box)
+        self.all_sprites.add(random_box)
+        self.blocks.add(random_box)
 
     def addCoin(self, x, y):
-        self.entityList.append(Coin(self.screen, self.sprites.spriteCollection, x, y))
+        coin = Coin(self.screen, self.sprites.spriteCollection, x, y)
+        self.entityList.append(coin)
+        self.all_sprites.add(coin)
+        self.items.add(coin)
 
     def addCoinBrick(self, x, y):
         self.level[y][x] = Tile(None, pygame.Rect(x * 32, y * 32 - 1, 32, 32))
-        self.entityList.append(
-            CoinBrick(
-                self.screen,
-                self.sprites.spriteCollection,
-                x,
-                y,
-                self.sound,
-                self.dashboard
-            )
+        coin_brick = CoinBrick(
+            self.screen,
+            self.sprites.spriteCollection,
+            x,
+            y,
+            self.sound,
+            self.dashboard
         )
+        self.entityList.append(coin_brick)
+        self.all_sprites.add(coin_brick)
+        self.blocks.add(coin_brick)
 
     def addGoomba(self, x, y):
-        self.entityList.append(
-            Goomba(self.screen, self.sprites.spriteCollection, x, y, self, self.sound)
-        )
+        goomba = Goomba(self.screen, self.sprites.spriteCollection, x, y, self, self.sound)
+        self.entityList.append(goomba)
+        self.all_sprites.add(goomba)
+        self.enemies.add(goomba)
 
     def addKoopa(self, x, y):
-        self.entityList.append(
-            Koopa(self.screen, self.sprites.spriteCollection, x, y, self, self.sound)
-        )
+        koopa = Koopa(self.screen, self.sprites.spriteCollection, x, y, self, self.sound)
+        self.entityList.append(koopa)
+        self.all_sprites.add(koopa)
+        self.enemies.add(koopa)
 
     def addRedMushroom(self, x, y):
-        self.entityList.append(
-            RedMushroom(self.screen, self.sprites.spriteCollection, x, y, self, self.sound)
-        )
+        mushroom = RedMushroom(self.screen, self.sprites.spriteCollection, x, y, self, self.sound)
+        self.entityList.append(mushroom)
+        self.all_sprites.add(mushroom)
+        self.items.add(mushroom)

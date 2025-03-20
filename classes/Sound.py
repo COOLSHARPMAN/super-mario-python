@@ -1,30 +1,88 @@
-from pygame import mixer
+import pygame
 
 
 class Sound:
-    def __init__(self):
-        self.music_channel = mixer.Channel(0)
-        self.music_channel.set_volume(0.2)
-        self.sfx_channel = mixer.Channel(1)
-        self.sfx_channel.set_volume(0.2)
+    def __init__(self, sound_enabled=True):
+        self.sound_enabled = sound_enabled
+        if self.sound_enabled:
+            try:
+                # 加载音效
+                self.coin = pygame.mixer.Sound('./sounds/coin.wav')
+                self.jump = pygame.mixer.Sound('./sounds/jump.wav')
+                self.die = pygame.mixer.Sound('./sounds/die.wav')
+                self.kick = pygame.mixer.Sound('./sounds/kick.wav')
+                self.bump = pygame.mixer.Sound('./sounds/bump.wav')
+                self.powerup = pygame.mixer.Sound('./sounds/powerup.wav')
+                self.powerdown = pygame.mixer.Sound('./sounds/powerdown.wav')
+                self.stomp = pygame.mixer.Sound('./sounds/stomp.wav')
+                
+                # 加载音乐
+                pygame.mixer.music.load('./sounds/music.mp3')
+                
+                # 设置音量
+                self.set_volume(1.0)
+            except pygame.error:
+                print("Warning: Could not load sound files. Game will run without sound.")
+                self.sound_enabled = False
 
-        self.allowSFX = True
+    def play_sound(self, sound_name):
+        if not self.sound_enabled:
+            return
+            
+        try:
+            if sound_name == 'coin':
+                self.coin.play()
+            elif sound_name == 'jump':
+                self.jump.play()
+            elif sound_name == 'die':
+                self.die.play()
+            elif sound_name == 'kick':
+                self.kick.play()
+            elif sound_name == 'bump':
+                self.bump.play()
+            elif sound_name == 'powerup':
+                self.powerup.play()
+            elif sound_name == 'powerdown':
+                self.powerdown.play()
+            elif sound_name == 'stomp':
+                self.stomp.play()
+        except pygame.error:
+            pass
 
-        self.soundtrack = mixer.Sound("./sfx/main_theme.ogg")
-        self.coin = mixer.Sound("./sfx/coin.ogg")
-        self.bump = mixer.Sound("./sfx/bump.ogg")
-        self.stomp = mixer.Sound("./sfx/stomp.ogg")
-        self.jump = mixer.Sound("./sfx/small_jump.ogg")
-        self.death = mixer.Sound("./sfx/death.wav")
-        self.kick = mixer.Sound("./sfx/kick.ogg")
-        self.brick_bump = mixer.Sound("./sfx/brick-bump.ogg")
-        self.powerup = mixer.Sound('./sfx/powerup.ogg')
-        self.powerup_appear = mixer.Sound('./sfx/powerup_appears.ogg')
-        self.pipe = mixer.Sound('./sfx/pipe.ogg')
+    def play_music(self):
+        if not self.sound_enabled:
+            return
+            
+        try:
+            pygame.mixer.music.play(-1)  # -1表示循环播放
+        except pygame.error:
+            pass
 
-    def play_sfx(self, sfx):
-        if self.allowSFX:
-            self.sfx_channel.play(sfx)
+    def stop_music(self):
+        if not self.sound_enabled:
+            return
+            
+        try:
+            pygame.mixer.music.stop()
+        except pygame.error:
+            pass
 
-    def play_music(self, music):
-        self.music_channel.play(music)
+    def set_volume(self, volume):
+        if not self.sound_enabled:
+            return
+            
+        try:
+            # 设置所有音效的音量
+            self.coin.set_volume(volume)
+            self.jump.set_volume(volume)
+            self.die.set_volume(volume)
+            self.kick.set_volume(volume)
+            self.bump.set_volume(volume)
+            self.powerup.set_volume(volume)
+            self.powerdown.set_volume(volume)
+            self.stomp.set_volume(volume)
+            
+            # 设置音乐的音量
+            pygame.mixer.music.set_volume(volume)
+        except pygame.error:
+            pass
